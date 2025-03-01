@@ -5,9 +5,7 @@ from tempfile import TemporaryDirectory
 from mips_tester import create_harness, MipsState, JumpType, configure
 
 """
-Todo: in setup, curl mars to temp dir and set that as mars path
-command = ['curl', '-o', './mars.jar', 'https://dpetersanderson.github.io/Mars4_5.jar']
-subprocess.run(command)
+Todo: in setup, download mars if specified path does not exist
 """
 
 
@@ -16,8 +14,11 @@ class TestHarness(unittest.TestCase):
         self.temp_dir = TemporaryDirectory()
         self.temp_path = Path(self.temp_dir.name)
         # !  <---  MAY NEED TO MODIFY THIS LINE TO REFLECT YOUR mars.jar LOCATION  --->
+        mars_jar_path = Path("./mars.jar")
+        if not mars_jar_path.exists():
+            self.skipTest("mars.jar not found.  Place mars.jar in the same directory as this test.")
         configure(
-            mars_path="./mars.jar",
+            mars_path=mars_jar_path,
             max_steps=1000,
             output_harness="test_harness.asm",
         )
