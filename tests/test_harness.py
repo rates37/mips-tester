@@ -116,6 +116,61 @@ class TestHarness(unittest.TestCase):
             self.assertIn("sw $t0, ($t1)", content)
             self.assertIn("jal start", content)
 
+    def test_create_harness_empty_state(self):
+        initial_state = MipsState()
+        # test 1 with default label:
+        harness_path = create_harness(
+            initial_state,
+            output_harness_name=self.temp_path / "test_harness.asm",
+        )
+        self.assertTrue(harness_path.exists())
+        with open(harness_path, "r") as f:
+            content = f.read()
+            self.assertIn("j main", content)
+
+        # test 2 with custom label:
+        harness_path = create_harness(
+            initial_state,
+            label="start",
+            output_harness_name=self.temp_path / "test_harness.asm",
+        )
+        self.assertTrue(harness_path.exists())
+        with open(harness_path, "r") as f:
+            content = f.read()
+            self.assertIn("j start", content)
+
+    def test_create_harness_hex_values(self):
+        initial_state = MipsState(
+            registers={"a0": "0x10", "v0": "0x20"},
+            memory={"0x1000": "0x30", "0x1004": "0x40"},
+        )
+        # test 1: default label
+        harness_path = create_harness(initial_state, )
+        self.assertTrue(harness_path.exists())
+        with open(harness_path, "r") as f:
+            content = f.read()
+            self.assertIn("li $a0, 0x10", content)
+            self.assertIn("li $v0, 0x20", content)
+            self.assertIn("li $t0, 0x30", content)
+            self.assertIn("sw $t0, ($t1)", content)
+            self.assertIn("j main", content)
+        
+        # test 2: custom label
+        harness_path = create_harness(initial_state, label="start")
+        self.assertTrue(harness_path.exists())
+        with open(harness_path, "r") as f:
+            content = f.read()
+            self.assertIn("li $a0, 0x10", content)
+            self.assertIn("li $v0, 0x20", content)
+            self.assertIn("li $t0, 0x30", content)
+            self.assertIn("sw $t0, ($t1)", content)
+            self.assertIn("j start", content)
+            
+    def test_create_harness_invalid_label(self):
+        # test with a label that contains spaces
+        initial_state = MipsState(registers={"a0": "10"})
+        with self.assertRaises(ValueError):
+            create_harness(initial_state, label="invalid label")
 
 if __name__ == "__main__":
     unittest.main()
