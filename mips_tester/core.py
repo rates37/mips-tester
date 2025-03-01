@@ -22,7 +22,7 @@ class MipsConfig(BaseModel):
         description="Default maximum number of steps to simulate MIPS programs for",
     )
     default_output_harness: str = Field(
-        deafult="harness.asm", description="Default output filename for test harness"
+        default="harness.asm", description="Default output filename for test harness"
     )
 
     class Config:
