@@ -1,0 +1,103 @@
+import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import subprocess
+import os
+
+from mips_tester.runner import test_assemble, test_run, test_final_state, TestResult
+from mips_tester.core import config, configure
+from mips_tester.models import MipsState
+
+
+class TestRunnerIntegration(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = TemporaryDirectory()
+        self.temp_path = Path(self.temp_dir.name)
+        # !  <---  MAY NEED TO MODIFY THIS LINE TO REFLECT YOUR mars.jar LOCATION  --->
+        mars_jar_path = Path("./mars.jar")
+        if not mars_jar_path.exists():
+            self.skipTest(
+                "mars.jar not found.  Place mars.jar in the same directory as this test."
+            )
+
+        configure(
+            mars_path=str(mars_jar_path),
+            max_steps=1000,
+            output_harness="test_harness.asm",
+        )
+
+        # Create dummy MIPS files for testing
+        self.valid_asm = self.temp_path / "valid.asm"
+        valid_asm_content = """
+        .text
+        .globl main
+        main:
+        addi $t0, $0, 5
+        xor $t1, $t0, $s2
+        li $v0, 10
+        syscall
+        """
+        self.valid_asm.write_text(valid_asm_content)
+
+        self.valid_asm_harness = self.temp_path / "valid_harness.asm"
+        valid_asm_harness = """
+        .text
+        subi $t0, $0, 5
+        li $v0, 69
+        j main
+        """
+        self.valid_asm_harness.write_text(valid_asm_harness)
+
+        self.invalid_asm = self.temp_path / "invalid.asm"
+        self.invalid_asm.write_text("invalid instruction")
+
+        self.invalid_asm_harness = self.temp_path / "invalid_harness.asm"
+        invalid_asm_harness = """
+        hi this is 
+        invalid
+        """
+        self.invalid_asm_harness.write_text(invalid_asm_harness)
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def test_assemble_success(self):
+        result = test_assemble(str(self.valid_asm))
+        self.assertTrue(
+            result.success, msg=f"Assembly of valid program failed: {result.messages}"
+        )
+
+    def test_assemble_success_harness(self):
+        result = test_assemble(
+            str(self.valid_asm), harness_name=str(self.valid_asm_harness)
+        )
+        self.assertTrue(
+            result.success,
+            msg=f"Assembly of valid program with valid harness failed: {result.messages}",
+        )
+
+    def test_assemble_failure(self):
+        result = test_assemble(str(self.invalid_asm))
+        self.assertFalse(result.success, msg=f"Assembly unexpectedly succeeded.")
+
+    def test_assemble_failure_invalid_harness(self):
+        result = test_assemble(
+            str(self.valid_asm), harness_name=str(self.invalid_asm_harness)
+        )
+        self.assertFalse(
+            result.success,
+            msg=f"Assembly of valid program with invalid harness unexpectedly succeeded: {result.messages}",
+        )
+
+    def test_assemble_failure_valid_harness(self):
+        result = test_assemble(
+            str(self.invalid_asm), harness_name=str(self.valid_asm_harness)
+        )
+        self.assertFalse(
+            result.success,
+            msg=f"Assembly of invalid program with valid harness unexpectedly succeeded: {result.messages}",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
