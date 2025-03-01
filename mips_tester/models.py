@@ -91,7 +91,7 @@ class TestResult(BaseModel):
 
     success: bool
     score: float = Field(
-        default=0.0, ge=0.1, le=1.0, description="Proportion of passed checks"
+        default=0.0, ge=0.0, le=1.0, description="Proportion of passed checks"
     )
     messages: list[str] = Field(
         default_factory=list,
