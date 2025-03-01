@@ -145,7 +145,10 @@ class TestHarness(unittest.TestCase):
             memory={"0x1000": "0x30", "0x1004": "0x40"},
         )
         # test 1: default label
-        harness_path = create_harness(initial_state, )
+        harness_path = create_harness(
+            initial_state,
+            output_harness_name=self.temp_path / "test_harness.asm",
+        )
         self.assertTrue(harness_path.exists())
         with open(harness_path, "r") as f:
             content = f.read()
@@ -154,9 +157,13 @@ class TestHarness(unittest.TestCase):
             self.assertIn("li $t0, 0x30", content)
             self.assertIn("sw $t0, ($t1)", content)
             self.assertIn("j main", content)
-        
+
         # test 2: custom label
-        harness_path = create_harness(initial_state, label="start")
+        harness_path = create_harness(
+            initial_state,
+            label="start",
+            output_harness_name=self.temp_path / "test_harness.asm",
+        )
         self.assertTrue(harness_path.exists())
         with open(harness_path, "r") as f:
             content = f.read()
@@ -165,12 +172,17 @@ class TestHarness(unittest.TestCase):
             self.assertIn("li $t0, 0x30", content)
             self.assertIn("sw $t0, ($t1)", content)
             self.assertIn("j start", content)
-            
+
     def test_create_harness_invalid_label(self):
         # test with a label that contains spaces
         initial_state = MipsState(registers={"a0": "10"})
         with self.assertRaises(ValueError):
-            create_harness(initial_state, label="invalid label")
+            create_harness(
+                initial_state,
+                label="invalid label",
+                output_harness_name=self.temp_path / "test_harness.asm",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
