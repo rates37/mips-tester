@@ -46,7 +46,8 @@ def create_harness(
         harness_file.write(".text\n\n")
 
         # initialise memory locations:
-        for addr, val in initial_state.memory.values():
+        for addr in initial_state.memory:
+            val = initial_state.memory[addr]
             harness_file.write(f"# Storing {val} in the location {addr}:\n")
             harness_file.write(f"li $t0, {val}\n")
             harness_file.write(f"la $t1, {addr}\n")
@@ -56,7 +57,7 @@ def create_harness(
         for reg, val in initial_state.registers.dict().items():
             if val is not None:
                 harness_file.write(f"# Storing {val} in register ${reg}:\n")
-                harness_file.write(f"la ${reg}, {val}\n\n")
+                harness_file.write(f"li ${reg}, {val}\n\n")
 
         # jump to given label
         harness_file.write(f"# Jumping to user code at label {label}:\n")
