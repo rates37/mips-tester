@@ -8,7 +8,7 @@ from .models import MipsState, JumpType
 from .core import config
 
 
-def create_setup_file(
+def create_harness(
     initial_state: MipsState | dict,
     label: str = "main",
     output_harness_name: str | None = None,
