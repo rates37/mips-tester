@@ -26,6 +26,10 @@ def create_harness(
     Returns:
         Path: Path to the created harness asm file.
     """
+    # verify label does not contain spaces:
+    if " " in label:
+        raise ValueError(f"Label '{label}' cannot contain spaces")
+
 
     # ensure initial_state is a MipsState object
     if isinstance(initial_state, dict):
