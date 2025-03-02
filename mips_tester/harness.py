@@ -58,7 +58,7 @@ def create_harness(
             harness_file.write("sw $t0, ($t1)\n\n")
 
         # initialise register values
-        for reg, val in initial_state.registers.dict().items():
+        for reg, val in initial_state.registers.model_dump().items():
             if val is not None:
                 harness_file.write(f"# Storing {val} in register ${reg}:\n")
                 harness_file.write(f"li ${reg}, {val}\n\n")
