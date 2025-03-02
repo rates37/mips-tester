@@ -26,10 +26,10 @@ def test_assemble(
     command = ["java", "-jar", str(config.mars_path)]
 
     if harness_name is not None:
-        command.append(f'"{harness_name}"')
+        command.append(f"{harness_name}")
 
     command.extend(
-        [f'"{filename}"', "nc", "a"]
+        [f"{filename}", "nc", "a"]
     )  # a -> assemble only, nc -> no copyright message
 
     result = subprocess.getstatusoutput(
@@ -47,7 +47,9 @@ def test_assemble(
             print(
                 f"Program {' '.join([harness_name, filename] if harness_name else [filename])} did not assemble correctly!"
             )
-        return TestResult(success=False, score=0.0, messages=["Program did not compile correctly"])
+        return TestResult(
+            success=False, score=0.0, messages=["Program did not compile correctly"]
+        )
 
 
 def test_run(
