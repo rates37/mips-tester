@@ -57,6 +57,15 @@ class TestRunnerIntegration(unittest.TestCase):
         invalid
         """
         self.invalid_asm_harness.write_text(invalid_asm_harness)
+        
+        self.valid_asm_runtime_execution = self.temp_path / "valid_runtime_execution.asm"
+        valid_asm_runtime_execution_content = """
+        .text
+        la $t0, 0x00000000
+        sw $t1, ($t0)
+        """
+        self.valid_asm_runtime_execution.write_text(valid_asm_runtime_execution_content)
+
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -96,6 +105,49 @@ class TestRunnerIntegration(unittest.TestCase):
         self.assertFalse(
             result.success,
             msg=f"Assembly of invalid program with valid harness unexpectedly succeeded: {result.messages}",
+        )
+
+    def test_run_success(self):
+        result = test_run(str(self.valid_asm))
+        self.assertTrue(
+            result.success, msg=f"Run of valid program failed: {result.messages}"
+        )
+
+    def test_run_success_harness(self):
+        result = test_run(
+            str(self.valid_asm), harness_name=str(self.valid_asm_harness)
+        )
+        self.assertTrue(
+            result.success,
+            msg=f"Run of valid program with valid harness failed: {result.messages}",
+        )
+
+    def test_run_failure(self):
+        result = test_run(str(self.invalid_asm))
+        self.assertFalse(result.success, msg=f"Run of invalid program unexpectedly succeeded.")
+
+    def test_run_failure_invalid_harness(self):
+        result = test_run(
+            str(self.valid_asm), harness_name=str(self.invalid_asm_harness)
+        )
+        self.assertFalse(
+            result.success,
+            msg=f"Run of valid program with invalid harness unexpectedly succeeded: {result.messages}",
+        )
+
+    def test_run_failure_valid_harness(self):
+        result = test_run(
+            str(self.invalid_asm), harness_name=str(self.valid_asm_harness)
+        )
+        self.assertFalse(
+            result.success,
+            msg=f"Run of invalid program with valid harness unexpectedly succeeded: {result.messages}",
+        )
+    
+    def test_run_runtime_execution(self):
+        result = test_run(str(self.valid_asm_runtime_execution))
+        self.assertFalse(
+            result.success, msg=f"Run of program with runtime execution unexpectedly succeeded: {result.messages}"
         )
 
 
