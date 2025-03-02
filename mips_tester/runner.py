@@ -57,7 +57,41 @@ def test_run(
     max_steps: int | None = None,
 ) -> TestResult:
 
-    pass
+    # revert to defaults if max_steps not specified:
+    if max_steps is None:
+        max_steps = config.default_max_steps
+
+    command = ["java", "-jar", str(config.mars_path)]
+
+    # include harness if specified
+    if harness_name is not None:
+        command.append(f"{str(harness_name)}")
+
+    command.extend([f"{filename}", str(max_steps), "nc", "se1", "ae1"])
+
+    # run program:
+    # print(" ".join(command))
+    result = subprocess.getstatusoutput(" ".join(command))
+    # with open(filename, "r") as f:
+    #     print(f.read())
+    # print(result)
+
+    if result[0] == 0:
+        if verbose:
+            print(
+                f"Program {' '.join([harness_name, filename] if harness_name else [filename])} did not have runtime errors!"
+            )
+        return TestResult(success=True, score=1.0)
+    else:
+        if verbose:
+            print(
+                f"Program {' '.join([harness_name, filename] if harness_name else [filename])} had runtime error(s)!"
+            )
+        return TestResult(
+            success=False,
+            score=0.0,
+            messages=["Program execution resulted in runtime errors"],
+        )
 
 
 def test_final_state(
