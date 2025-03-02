@@ -4,7 +4,6 @@ Includes configuration and shared utils
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
 from pathlib import Path
 
 

@@ -1,11 +1,9 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import subprocess
-import os
 
 from mips_tester.runner import test_assemble, test_run, test_final_state, TestResult
-from mips_tester.core import config, configure
+from mips_tester.core import configure
 from mips_tester.models import MipsState
 
 
