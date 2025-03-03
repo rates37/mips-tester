@@ -2,9 +2,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from mips_tester.runner import test_assemble, test_run, test_final_state, TestResult
-from mips_tester.core import configure
-from mips_tester.models import MipsState
+from mips_tester import configure, MipsState, test_assemble, test_run, test_final_state, TestResult
 
 
 class TestRunnerIntegration(unittest.TestCase):
