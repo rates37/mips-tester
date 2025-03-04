@@ -104,4 +104,98 @@ def test_final_state(
     max_steps: int | None = None,
 ) -> TestResult:
 
-    pass
+    # convert expected_state to MipsState if not already:
+    if isinstance(expected_state, dict):
+        expected_state = MipsState(**expected_state)
+
+    # revert to defaults if max_steps not specified:
+    if max_steps is None:
+        max_steps = config.default_max_steps
+
+    # check the program assembles first:
+    assembly_test = test_assemble(filename, harness_name, False)
+    if not assembly_test.success:
+        return TestResult(
+            success=False,
+            score=0.0,
+            messages=[f"{filename} did not assemble correctly"],
+        )
+
+    # check the program runs:
+    run_test = test_run(filename, harness_name, False, max_steps)
+    if not run_test.success:
+        return TestResult(
+            success=False,
+            score=0.0,
+            messages=[f"{filename} did not run correctly"],
+        )
+
+    # check each part of final state:
+    total_marks = 0
+    available_marks = 0
+    messages = []
+
+    # check memory values:
+    for addr in expected_state.memory:
+        available_marks += 1
+
+        # construct command:
+        command = [
+            "java",
+            "-jar",
+            str(config.mars_path),
+            str(filename),
+            str(max_steps),
+            "se1",
+            "nc",
+            f"{addr}-{addr}",
+        ]
+
+        result = subprocess.getstatusoutput(" ".join(command))
+
+        expected_value = expected_state.memory[addr]
+        actual_value = result[1].split("\n")[-1].split()[1]
+
+        if int(actual_value, base=16) == int(expected_value, base=0):
+            total_marks += 1
+            if verbose:
+                print(f"Correct value in {addr}")
+        else:
+            message = f"Incorrect value in {addr}! Expected: {expected_value} Actual: {actual_value}"
+            messages.append(message)
+            if verbose:
+                print(message)
+
+    # check register values:
+    for reg, expected_value in expected_state.registers.model_dump().items():
+        if expected_value is None:
+            continue
+
+        available_marks += 1
+
+        # construct command:
+        command = [
+            "java",
+            "-jar",
+            str(config.mars_path),
+            str(filename),
+            str(max_steps),
+            "se1",
+            "nc",
+            f"{reg}",
+        ]
+        result = subprocess.getstatusoutput(" ".join(command))
+        actual_value = result[1].split("\n")[-1].split()[1]
+
+        if int(actual_value, base=16) == int(expected_value, base=0):
+            total_marks += 1
+            if verbose:
+                print(f"Correct value in ${reg}")
+        else:
+            message = f"Incorrect value in ${reg}! Expected: {expected_value} Actual: {actual_value}"
+            messages.append(message)
+            if verbose:
+                print(message)
+
+    score = total_marks / available_marks if available_marks > 0 else 1.0
+    return TestResult(success=True, score=score, messages=messages)
