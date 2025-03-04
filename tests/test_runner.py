@@ -18,7 +18,7 @@ class TestRunnerIntegration(unittest.TestCase):
 
         configure(
             mars_path=str(mars_jar_path),
-            max_steps=1000,
+            max_steps=100,
             output_harness="test_harness.asm",
         )
 
