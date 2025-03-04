@@ -54,13 +54,13 @@ class TestRunnerIntegration(unittest.TestCase):
         """
         self.invalid_asm_harness.write_text(invalid_asm_harness)
         
-        self.valid_asm_runtime_execution = self.temp_path / "valid_runtime_execution.asm"
-        valid_asm_runtime_execution_content = """
+        self.valid_asm_runtime_exception = self.temp_path / "valid_runtime_execution.asm"
+        valid_asm_runtime_exception_content = """
         .text
         la $t0, 0x00000000
         sw $t1, ($t0)
         """
-        self.valid_asm_runtime_execution.write_text(valid_asm_runtime_execution_content)
+        self.valid_asm_runtime_exception.write_text(valid_asm_runtime_exception_content)
 
 
     def tearDown(self):
@@ -141,7 +141,7 @@ class TestRunnerIntegration(unittest.TestCase):
         )
     
     def test_run_runtime_execution(self):
-        result = test_run(str(self.valid_asm_runtime_execution))
+        result = test_run(str(self.valid_asm_runtime_exception))
         self.assertFalse(
             result.success, msg=f"Run of program with runtime execution unexpectedly succeeded: {result.messages}"
         )
