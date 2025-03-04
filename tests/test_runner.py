@@ -2,7 +2,14 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from mips_tester import configure, MipsState, test_assemble, test_run, test_final_state, TestResult
+from mips_tester import (
+    configure,
+    MipsState,
+    test_assemble,
+    test_run,
+    test_final_state,
+    TestResult,
+)
 
 
 class TestRunnerIntegration(unittest.TestCase):
@@ -53,8 +60,10 @@ class TestRunnerIntegration(unittest.TestCase):
         invalid
         """
         self.invalid_asm_harness.write_text(invalid_asm_harness)
-        
-        self.valid_asm_runtime_exception = self.temp_path / "valid_runtime_execution.asm"
+
+        self.valid_asm_runtime_exception = (
+            self.temp_path / "valid_runtime_execution.asm"
+        )
         valid_asm_runtime_exception_content = """
         .text
         .globl main
@@ -63,7 +72,6 @@ class TestRunnerIntegration(unittest.TestCase):
         sw $t1, ($t0)
         """
         self.valid_asm_runtime_exception.write_text(valid_asm_runtime_exception_content)
-
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -112,9 +120,7 @@ class TestRunnerIntegration(unittest.TestCase):
         )
 
     def test_run_success_harness(self):
-        result = test_run(
-            str(self.valid_asm), harness_name=str(self.valid_asm_harness)
-        )
+        result = test_run(str(self.valid_asm), harness_name=str(self.valid_asm_harness))
         self.assertTrue(
             result.success,
             msg=f"Run of valid program with valid harness failed: {result.messages}",
@@ -122,7 +128,9 @@ class TestRunnerIntegration(unittest.TestCase):
 
     def test_run_failure(self):
         result = test_run(str(self.invalid_asm))
-        self.assertFalse(result.success, msg=f"Run of invalid program unexpectedly succeeded.")
+        self.assertFalse(
+            result.success, msg=f"Run of invalid program unexpectedly succeeded."
+        )
 
     def test_run_failure_invalid_harness(self):
         result = test_run(
@@ -141,60 +149,90 @@ class TestRunnerIntegration(unittest.TestCase):
             result.success,
             msg=f"Run of invalid program with valid harness unexpectedly succeeded: {result.messages}",
         )
-    
+
     def test_run_runtime_execution(self):
         result = test_run(str(self.valid_asm_runtime_exception))
         self.assertFalse(
-            result.success, msg=f"Run of program with runtime execution unexpectedly succeeded: {result.messages}"
+            result.success,
+            msg=f"Run of program with runtime execution unexpectedly succeeded: {result.messages}",
         )
-        
+
     def test_final_state_register_success(self):
         expected_state = MipsState(registers={"t0": "0x5"}, memory={})
-        result = test_final_state(expected_state, str(self.valid_asm_harness), str(self.valid_asm))
-        self.assertTrue(result.success, msg=f"Final state check failed: {result.messages}")
+        result = test_final_state(
+            expected_state, str(self.valid_asm_harness), str(self.valid_asm)
+        )
+        self.assertTrue(
+            result.success, msg=f"Final state check failed: {result.messages}"
+        )
         self.assertAlmostEqual(result.score, 1.0)
 
     def test_final_state_register_failure(self):
         expected_state = MipsState(registers={"t0": "0x10"}, memory={})
-        result = test_final_state(expected_state, str(self.valid_asm_harness), str(self.valid_asm))
-        self.assertTrue(result.success, msg=f"Final state check failed: {result.messages}.")
+        result = test_final_state(
+            expected_state, str(self.valid_asm_harness), str(self.valid_asm)
+        )
+        self.assertTrue(
+            result.success, msg=f"Final state check failed: {result.messages}."
+        )
         self.assertLess(result.score, 1.0)
 
     def test_final_state_memory_failure(self):
         expected_state = MipsState(registers={}, memory={"0x10010000": "0x10"})
-        result = test_final_state(expected_state, str(self.valid_asm_harness), str(self.valid_asm))
-        self.assertTrue(result.success, msg=f"Final state check failed: {result.messages}.")
+        result = test_final_state(
+            expected_state, str(self.valid_asm_harness), str(self.valid_asm)
+        )
+        self.assertTrue(
+            result.success, msg=f"Final state check failed: {result.messages}."
+        )
         self.assertLess(result.score, 1.0)
 
     def test_final_state_partial_success(self):
         # Test with both correct and incorrect values to check partial success
-        expected_state = MipsState(registers={"t0": "0x5", "t1": "0x10"}, memory={}) # t0 correct, t1 incorrect
-        result = test_final_state(expected_state, str(self.valid_asm_harness), str(self.valid_asm))
-        self.assertTrue(result.success, msg=f"Final state check failed: {result.messages}")
+        expected_state = MipsState(
+            registers={"t0": "0x5", "t1": "0x10"}, memory={}
+        )  # t0 correct, t1 incorrect
+        result = test_final_state(
+            expected_state, str(self.valid_asm_harness), str(self.valid_asm)
+        )
+        self.assertTrue(
+            result.success, msg=f"Final state check failed: {result.messages}"
+        )
         self.assertGreater(result.score, 0.0)
         self.assertLess(result.score, 1.0)
         self.assertAlmostEqual(result.score, 0.5)
-    
+
     def test_final_state_assembly_failure(self):
         expected_state = MipsState(registers={"t0": "0x5"}, memory={})
-        result = test_final_state(expected_state, str(self.valid_asm_harness), str(self.invalid_asm))
+        result = test_final_state(
+            expected_state, str(self.valid_asm_harness), str(self.invalid_asm)
+        )
         self.assertFalse(result.success)
         self.assertEqual(result.score, 0.0)
         self.assertIn("did not assemble correctly", result.messages[0])
-        
+
     def test_final_state_run_failure(self):
         expected_state = MipsState(registers={"t0": "0x5"}, memory={})
-        result = test_final_state(expected_state, str(self.valid_asm_harness), str(self.valid_asm_runtime_exception))
+        result = test_final_state(
+            expected_state,
+            str(self.valid_asm_harness),
+            str(self.valid_asm_runtime_exception),
+        )
         self.assertFalse(result.success)
         self.assertEqual(result.score, 0.0)
         self.assertIn("did not run correctly", result.messages[0])
-    
+
     def test_final_state_empty_expected_state(self):
         # Test with empty expected state.  Should pass with a score of 1.0
         expected_state = MipsState(registers={}, memory={})
-        result = test_final_state(expected_state, str(self.valid_asm_harness), str(self.valid_asm))
-        self.assertTrue(result.success, msg=f"Final state check failed: {result.messages}")
+        result = test_final_state(
+            expected_state, str(self.valid_asm_harness), str(self.valid_asm)
+        )
+        self.assertTrue(
+            result.success, msg=f"Final state check failed: {result.messages}"
+        )
         self.assertAlmostEqual(result.score, 1.0)
+
 
 if __name__ == "__main__":
     unittest.main()

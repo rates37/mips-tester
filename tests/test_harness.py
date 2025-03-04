@@ -16,7 +16,9 @@ class TestHarness(unittest.TestCase):
         # !  <---  MAY NEED TO MODIFY THIS LINE TO REFLECT YOUR mars.jar LOCATION  --->
         mars_jar_path = Path("./mars.jar")
         if not mars_jar_path.exists():
-            self.skipTest("mars.jar not found.  Place mars.jar in the same directory as this test.")
+            self.skipTest(
+                "mars.jar not found.  Place mars.jar in the same directory as this test."
+            )
         configure(
             mars_path=mars_jar_path,
             max_steps=1000,

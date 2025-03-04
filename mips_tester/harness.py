@@ -30,7 +30,6 @@ def create_harness(
     if " " in label:
         raise ValueError(f"Label '{label}' cannot contain spaces")
 
-
     # ensure initial_state is a MipsState object
     if isinstance(initial_state, dict):
         initial_state = MipsState(**initial_state)
