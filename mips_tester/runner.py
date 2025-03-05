@@ -130,31 +130,55 @@ def test_final_state(
             messages=[f"{filename} did not run correctly"],
         )
 
-    # check each part of final state:
+    # prepare command to check both memory and registers
+    check_targets = []
+
+    # add memory locations:
+    for addr in expected_state.memory:
+        check_targets.append(f"{addr}-{addr}")
+
+    # add register names:
+    for reg, expected_value in expected_state.registers.model_dump().items():
+        if expected_value is not None:
+            check_targets.append(f"{reg}")
+
+    # construct command:
+    command = [
+        "java",
+        "-jar",
+        str(config.mars_path),
+        str(harness_name),
+        str(filename),
+        str(max_steps),
+        "se1",
+        "nc",
+        *check_targets,
+    ]
+
+    result = subprocess.getstatusoutput(" ".join(command))
+
+    output_lines = result[1].split("\n")
+
+    # parse the output:
     total_marks = 0
     available_marks = 0
     messages = []
 
-    # check memory values:
+    # check memory locations:
     for addr in expected_state.memory:
         available_marks += 1
 
-        # construct command:
-        command = [
-            "java",
-            "-jar",
-            str(config.mars_path),
-            str(filename),
-            str(max_steps),
-            "se1",
-            "nc",
-            f"{addr}-{addr}",
-        ]
+        # find the line in output corresponding to this memory address:
+        target_mem_line = next(
+            (line for line in output_lines if f"Mem[{addr}]" in line), None
+        )
 
-        result = subprocess.getstatusoutput(" ".join(command))
+        if not target_mem_line:
+            # todo: possibly raise exception here?
+            continue
 
+        actual_value = target_mem_line.split()[-1]
         expected_value = expected_state.memory[addr]
-        actual_value = result[1].split("\n")[-1].split()[1]
 
         if int(actual_value, base=16) == int(expected_value, base=0):
             total_marks += 1
@@ -166,26 +190,20 @@ def test_final_state(
             if verbose:
                 print(message)
 
-    # check register values:
+    # check register values
     for reg, expected_value in expected_state.registers.model_dump().items():
         if expected_value is None:
             continue
-
         available_marks += 1
 
-        # construct command:
-        command = [
-            "java",
-            "-jar",
-            str(config.mars_path),
-            str(filename),
-            str(max_steps),
-            "se1",
-            "nc",
-            f"{reg}",
-        ]
-        result = subprocess.getstatusoutput(" ".join(command))
-        actual_value = result[1].split("\n")[-1].split()[1]
+        target_reg_line = next(
+            (line for line in output_lines if f"${reg}" in line), None
+        )
+
+        if not target_reg_line:
+            # todo: possibly raise exception here?
+            continue
+        actual_value = target_reg_line.split()[-1]
 
         if int(actual_value, base=16) == int(expected_value, base=0):
             total_marks += 1
