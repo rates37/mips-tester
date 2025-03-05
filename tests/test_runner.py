@@ -232,6 +232,17 @@ class TestRunnerIntegration(unittest.TestCase):
             result.success, msg=f"Final state check failed: {result.messages}"
         )
         self.assertAlmostEqual(result.score, 1.0)
+    
+    def test_final_state_memory_text_region_success(self):
+        expected_state = MipsState(registers={}, memory={"0x400000": "0x0"})
+        result = test_final_state(
+            expected_state, str(self.valid_asm_harness), str(self.valid_asm)
+        )
+        self.assertTrue(
+            result.success, msg=f"Final state check failed: {result.messages}."
+        )
+        self.assertLess(result.score, 1.0)
+        
 
 
 if __name__ == "__main__":

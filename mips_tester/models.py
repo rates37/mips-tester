@@ -63,7 +63,8 @@ class MipsState(BaseModel):
 
             # ensure address is number (decimal or hex):
             try:
-                int(addr_str, 0)
+                addr_int = int(addr_str, 0)
+                addr_padded = f"0x{addr_int:08x}"
             except ValueError:
                 raise ValueError(
                     f"Invalid memory address: {addr_str}! Must be decimal or hex"
@@ -79,7 +80,7 @@ class MipsState(BaseModel):
                 raise ValueError(
                     f"Invalid memory value: {val_str}! Must be decimal or hex"
                 )
-            memory[addr_str] = val_str
+            memory[addr_padded] = val_str
         return memory
 
     class Config:
