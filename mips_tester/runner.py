@@ -174,8 +174,7 @@ def test_final_state(
         )
 
         if not target_mem_line:
-            # todo: possibly raise exception here?
-            continue
+            raise ValueError(f"Mem[{addr}] not found in output, critical error occurred")
 
         actual_value = target_mem_line.split()[-1]
         expected_value = expected_state.memory[addr]
@@ -201,8 +200,8 @@ def test_final_state(
         )
 
         if not target_reg_line:
-            # todo: possibly raise exception here?
-            continue
+            raise ValueError(f"${reg} not found in output, critical error occurred")
+        
         actual_value = target_reg_line.split()[-1]
 
         if int(actual_value, base=16) == int(expected_value, base=0):
