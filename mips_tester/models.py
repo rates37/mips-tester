@@ -3,7 +3,7 @@ Defined data models for MIPS testing library
 """
 
 from enum import Enum
-from pydantic import BaseModel, Field, validator, ConfigDict
+from pydantic import BaseModel, Field, validator, ConfigDict, field_validator
 
 
 class JumpType(str, Enum):
@@ -53,8 +53,8 @@ class MipsState(BaseModel):
         description="Memory address to value mappings (decimal or Hex)",
     )
 
-    @validator("memory")
-    def validate_memory_addresses(cls, v):
+    @field_validator("memory")
+    def validate_memory_addresses(v, cls):
         memory = dict()
         for addr, val in v.items():
             # ensure address is string:
