@@ -3,7 +3,7 @@ Defined data models for MIPS testing library
 """
 
 from enum import Enum
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, ConfigDict
 
 
 class JumpType(str, Enum):
@@ -41,8 +41,7 @@ class RegisterState(BaseModel):
     s6: str | None = None
     s7: str | None = None
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
 
 class MipsState(BaseModel):
