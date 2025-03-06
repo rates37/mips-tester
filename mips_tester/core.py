@@ -33,7 +33,7 @@ config = MipsConfig()
 
 
 def configure(
-    mars_path: str | None, max_steps: int | None, output_harness: str | None
+    mars_path: str | None = None, max_steps: int | None = None, output_harness: str | None = None
 ) -> None:
     """Updates global config for MIPS tester
 
