@@ -72,11 +72,7 @@ def test_run(
     command.extend([f"{filename}", str(max_steps), "nc", "se1", "ae1"])
 
     # run program:
-    # print(" ".join(command))
     result = subprocess.getstatusoutput(" ".join(command))
-    # with open(filename, "r") as f:
-    #     print(f.read())
-    # print(result)
 
     if result[0] == 0:
         if verbose:
