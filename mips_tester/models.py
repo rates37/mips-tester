@@ -82,8 +82,7 @@ class MipsState(BaseModel):
             memory[addr_padded] = val_str
         return memory
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
 
 class TestResult(BaseModel):
