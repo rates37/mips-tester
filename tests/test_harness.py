@@ -28,10 +28,13 @@ class TestHarness(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
+    #! legacy tests: needs review
     def test_create_harness_basic(self):
-        initial_state = MipsState(
-            registers={"a0": "10", "v0": "20"},
-            memory={"1000": "30", "1004": "40"},
+        initial_state = MipsState.from_dict(
+            {
+                "registers": {"a0": "10", "v0": "20"},
+                "memory": {"1000": "30", "1004": "40"},
+            }
         )
         harness_path = create_harness(
             initial_state,
@@ -65,9 +68,11 @@ class TestHarness(unittest.TestCase):
             self.assertIn("j main", content)
 
     def test_create_harness_with_custom_label(self):
-        initial_state = MipsState(
-            registers={"a0": "10", "v0": "20"},
-            memory={"1000": "30", "1004": "40"},
+        initial_state = MipsState.from_dict(
+            {
+                "registers": {"a0": "10", "v0": "20"},
+                "memory": {"1000": "30", "1004": "40"},
+            }
         )
         harness_path = create_harness(
             initial_state,
@@ -84,9 +89,11 @@ class TestHarness(unittest.TestCase):
             self.assertIn("j start", content)
 
     def test_create_harness_jal(self):
-        initial_state = MipsState(
-            registers={"a0": "10", "v0": "20"},
-            memory={"1000": "30", "1004": "40"},
+        initial_state = MipsState.from_dict(
+            {
+                "registers": {"a0": "10", "v0": "20"},
+                "memory": {"1000": "30", "1004": "40"},
+            }
         )
         # test 1 with default label:
         harness_path = create_harness(
@@ -143,9 +150,11 @@ class TestHarness(unittest.TestCase):
             self.assertIn("j start", content)
 
     def test_create_harness_hex_values(self):
-        initial_state = MipsState(
-            registers={"a0": "0x10", "v0": "0x20"},
-            memory={"0x1000": "0x30", "0x1004": "0x40"},
+        initial_state = MipsState.from_dict(
+            {
+                "registers": {"a0": "0x10", "v0": "0x20"},
+                "memory": {"0x1000": "0x30", "0x1004": "0x40"},
+            }
         )
         # test 1: default label
         harness_path = create_harness(
