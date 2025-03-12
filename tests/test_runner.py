@@ -8,6 +8,8 @@ from mips_tester import (
     test_assemble,
     test_run,
     test_final_state,
+    MemorySize,
+    create_harness
 )
 
 
@@ -71,6 +73,31 @@ class TestRunnerIntegration(unittest.TestCase):
         sw $t1, ($t0)
         """
         self.valid_asm_runtime_exception.write_text(valid_asm_runtime_exception_content)
+        
+        self.memory_test_asm = self.temp_path / "memory_test.asm"
+        memory_test_content = """
+        .text
+        .globl main
+        main:
+        # Byte operations
+        li $t0, 69
+        la $t1, 0x10010000
+        sb $t0, 0($t1)
+        lb $t2, 0($t1)
+        
+        # Halfword operations
+        li $t0, 420
+        la $t1, 0x10010002
+        sh $t0, 0($t1)
+        lh $t3, 0($t1)
+        
+        # Word operations
+        li $t0, 69420
+        la $t1, 0x10010004
+        sw $t0, 0($t1)
+        lw $t4, 0($t1)
+        """
+        self.memory_test_asm.write_text(memory_test_content)
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -268,7 +295,34 @@ class TestRunnerIntegration(unittest.TestCase):
         )
         self.assertLess(result.score, 1.0)
 
-    # todo: test byte, halfword, words explicitly
+    def test_final_state_byte_memory(self):
+        """Test checking final state with byte memory accesses."""
+        # Create a simple harness for testing bytes
+        initial_state = MipsState()
+        harness_path = create_harness(
+            initial_state,
+            output_harness_name=self.temp_path / "byte_test_harness.asm",
+        )
+        
+        # Expected state after running the program
+        expected_state = MipsState(
+            registers={"t2": "69", "t3": "420", "t4": "69420"},
+            memory={
+                "0x10010000": {"value": "69", "size": MemorySize.BYTE},
+                "0x10010002": {"value": "420", "size": MemorySize.HALFWORD},
+                "0x10010004": {"value": "69420", "size": MemorySize.WORD}
+            }
+        )
+        
+        result = test_final_state(
+            expected_state, 
+            str(harness_path), 
+            str(self.memory_test_asm),
+            verbose=True
+        )
+        
+        self.assertTrue(result.success)
+        self.assertAlmostEqual(result.score, 1.0)
 
 
 if __name__ == "__main__":
