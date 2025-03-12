@@ -178,7 +178,9 @@ class TestRunnerIntegration(unittest.TestCase):
         self.assertLess(result.score, 1.0)
 
     def test_final_state_memory_failure_legacy(self):
-        expected_state = MipsState.from_dict({"registers":{}, "memory":{"0x10010000": "0x10"}})
+        expected_state = MipsState.from_dict(
+            {"registers": {}, "memory": {"0x10010000": "0x10"}}
+        )
         result = test_final_state(
             expected_state, str(self.valid_asm_harness), str(self.valid_asm)
         )
@@ -188,7 +190,9 @@ class TestRunnerIntegration(unittest.TestCase):
         self.assertLess(result.score, 1.0)
 
     def test_final_state_memory_failure(self):
-        expected_state = MipsState(registers={}, memory={"0x10010000": {"value": "0xFF", "size": "word"}})
+        expected_state = MipsState(
+            registers={}, memory={"0x10010000": {"value": "0xFF", "size": "word"}}
+        )
         result = test_final_state(
             expected_state, str(self.valid_asm_harness), str(self.valid_asm)
         )
@@ -242,9 +246,11 @@ class TestRunnerIntegration(unittest.TestCase):
             result.success, msg=f"Final state check failed: {result.messages}"
         )
         self.assertAlmostEqual(result.score, 1.0)
-    
+
     def test_final_state_memory_text_region_success_legacy(self):
-        expected_state = MipsState.from_dict({"registers":{}, "memory":{"0x400000": "0x0"}})
+        expected_state = MipsState.from_dict(
+            {"registers": {}, "memory": {"0x400000": "0x0"}}
+        )
         result = test_final_state(
             expected_state, str(self.valid_asm_harness), str(self.valid_asm)
         )
@@ -252,7 +258,7 @@ class TestRunnerIntegration(unittest.TestCase):
             result.success, msg=f"Final state check failed: {result.messages}."
         )
         self.assertLess(result.score, 1.0)
-    
+
     def test_final_state_memory_text_region_success(self):
         expected_state = MipsState(registers={}, memory={"0x400000": {"value": "0x0"}})
         result = test_final_state(
@@ -262,7 +268,7 @@ class TestRunnerIntegration(unittest.TestCase):
             result.success, msg=f"Final state check failed: {result.messages}."
         )
         self.assertLess(result.score, 1.0)
-    
+
     # todo: test byte, halfword, words explicitly
 
 
