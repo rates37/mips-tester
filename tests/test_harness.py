@@ -195,6 +195,7 @@ class TestHarness(unittest.TestCase):
                 output_harness_name=self.temp_path / "test_harness.asm",
             )
 
+    # todo: byte, halfword, word memory size explicit tests
 
 if __name__ == "__main__":
     unittest.main()
