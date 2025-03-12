@@ -73,7 +73,8 @@ class TestRunnerIntegration(unittest.TestCase):
         la $t0, 0x00000000
         sw $t1, ($t0)
         """
-        self.valid_asm_runtime_exception.write_text(valid_asm_runtime_exception_content)
+        self.valid_asm_runtime_exception.write_text(
+            valid_asm_runtime_exception_content)
 
         self.memory_test_asm = self.temp_path / "memory_test.asm"
         memory_test_content = """
@@ -146,12 +147,13 @@ class TestRunnerIntegration(unittest.TestCase):
         jr $ra
         """
         self.return_value_asm.write_text(return_value_content)
-        
+
         self.custom_label_asm = self.temp_path / "custom_label.asm"
-        custom_label_content = """
+        self.custom_label_asm_name = "custom_entry"
+        custom_label_content = f"""
         .text
-        .globl custom_entry
-        custom_entry:
+        .globl {self.custom_label_asm_name}
+        {self.custom_label_asm_name}:
         li $t0, 0xABCDEF
         li $t1, 0x123456
         
@@ -159,6 +161,19 @@ class TestRunnerIntegration(unittest.TestCase):
         syscall
         """
         self.custom_label_asm.write_text(custom_label_content)
+
+        # Create a MIPS program with the custom label
+        self.custom_label_jal_asm_name = "my_custom_label"
+        self.custom_label_jal_asm = self.temp_path / "custom_label_jal.asm"
+        custom_label_jal_content = f"""
+        .text
+        .globl {self.custom_label_jal_asm_name}
+        {self.custom_label_jal_asm_name}:
+        # subroutine to add one to argument $a0 and return value in $v0
+        addi $v0, $a0, 1
+        jr $ra
+        """
+        self.custom_label_jal_asm.write_text(custom_label_jal_content)
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -180,7 +195,8 @@ class TestRunnerIntegration(unittest.TestCase):
 
     def test_assemble_failure(self):
         result = test_assemble(str(self.invalid_asm))
-        self.assertFalse(result.success, msg=f"Assembly unexpectedly succeeded.")
+        self.assertFalse(
+            result.success, msg=f"Assembly unexpectedly succeeded.")
 
     def test_assemble_failure_invalid_harness(self):
         result = test_assemble(
@@ -207,7 +223,8 @@ class TestRunnerIntegration(unittest.TestCase):
         )
 
     def test_run_success_harness(self):
-        result = test_run(str(self.valid_asm), harness_name=str(self.valid_asm_harness))
+        result = test_run(str(self.valid_asm),
+                          harness_name=str(self.valid_asm_harness))
         self.assertTrue(
             result.success,
             msg=f"Run of valid program with valid harness failed: {result.messages}",
@@ -347,7 +364,8 @@ class TestRunnerIntegration(unittest.TestCase):
         self.assertLess(result.score, 1.0)
 
     def test_final_state_memory_text_region_success(self):
-        expected_state = MipsState(registers={}, memory={"0x400000": {"value": "0x0"}})
+        expected_state = MipsState(registers={}, memory={
+                                   "0x400000": {"value": "0x0"}})
         result = test_final_state(
             expected_state, str(self.valid_asm_harness), str(self.valid_asm)
         )
@@ -465,7 +483,8 @@ class TestRunnerIntegration(unittest.TestCase):
 
     def test_harness_jump_types_jal(self):
         """Test harness with jump and link (jal)."""
-        initial_state = MipsState(registers={"a0": "0x10", "a1": "0x20"}, memory={})
+        initial_state = MipsState(
+            registers={"a0": "0x10", "a1": "0x20"}, memory={})
 
         harness_path = create_harness(
             initial_state,
@@ -491,16 +510,15 @@ class TestRunnerIntegration(unittest.TestCase):
 
     def test_custom_label(self):
         """Test harness with custom entry label."""
-        
-        
+
         initial_state = MipsState(
             registers={"a0": "0x10", "a1": "0x20"},
             memory={}
         )
-        
+
         harness_path = create_harness(
             initial_state,
-            label="custom_entry",
+            label=self.custom_label_asm_name,
             output_harness_name=self.temp_path / "custom_label_harness.asm",
         )
 
@@ -513,17 +531,45 @@ class TestRunnerIntegration(unittest.TestCase):
                 "v0": "10"
             },
         )
-        
+
         result = test_final_state(
-            expected_state, 
-            str(harness_path), 
+            expected_state,
+            str(harness_path),
             str(self.custom_label_asm)
         )
-        
+
         self.assertTrue(result.success)
         self.assertAlmostEqual(result.score, 1.0)
 
-    # todo: test JAL with custom label
+    def test_jal_custom_label(self):
+        """Test harness with subroutine to custom entry label."""
+
+        initial_state = MipsState(
+            registers={"a0": "0x10"}
+        )
+
+        harness_path = create_harness(
+            initial_state,
+            label=self.custom_label_jal_asm_name,
+            output_harness_name=self.temp_path / "custom_label_harness.asm",
+            jump_type=JumpType.JUMP_AND_LINK,
+        )
+
+        expected_state = MipsState(
+            registers={
+                "v0": "0x11"
+            }
+        )
+
+        result = test_final_state(
+            expected_state,
+            str(harness_path),
+            str(self.custom_label_jal_asm)
+        )
+
+        self.assertTrue(result.success)
+        self.assertAlmostEqual(result.score, 1.0)
+
 
 if __name__ == "__main__":
     unittest.main()
