@@ -7,7 +7,6 @@ from pathlib import Path
 
 from .models import MipsState, TestResult, MemorySize
 from .core import config
-from .harness import create_harness
 
 
 def test_assemble(

@@ -8,7 +8,6 @@ from mips_tester import (
     test_assemble,
     test_run,
     test_final_state,
-    TestResult,
 )
 
 
