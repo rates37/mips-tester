@@ -4,7 +4,7 @@ Functions to create and manage MIPS test harnesses.
 
 from pathlib import Path
 
-from .models import MipsState, JumpType
+from .models import MipsState, JumpType, MemorySize
 from .core import config
 
 
@@ -32,7 +32,7 @@ def create_harness(
 
     # ensure initial_state is a MipsState object
     if isinstance(initial_state, dict):
-        initial_state = MipsState(**initial_state)
+        initial_state = MipsState.from_dict(initial_state)
 
     # resort to default output harness name
     if output_harness_name is None:
@@ -50,11 +50,21 @@ def create_harness(
 
         # initialise memory locations:
         for addr in initial_state.memory:
-            val = initial_state.memory[addr]
+            memory_entry = initial_state.memory[addr]
+            val = memory_entry.value
+            size = memory_entry.size
+
             harness_file.write(f"# Storing {val} in the location {addr}:\n")
             harness_file.write(f"li $t0, {val}\n")
             harness_file.write(f"la $t1, {addr}\n")
-            harness_file.write("sw $t0, ($t1)\n\n")
+
+            # use appropriate store instruction based on memory entry size:
+            if size == MemorySize.BYTE:
+                harness_file.write("sb $t0, ($t1)\n\n")
+            elif size == MemorySize.HALFWORD:
+                harness_file.write("sh $t0, ($t1)\n\n")
+            else:  # WORD (default)
+                harness_file.write("sw $t0, ($t1)\n\n")
 
         # initialise register values
         for reg, val in initial_state.registers.model_dump().items():
