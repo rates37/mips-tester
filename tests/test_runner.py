@@ -435,6 +435,8 @@ class TestRunnerIntegration(unittest.TestCase):
 
         self.assertTrue(result.success)
         self.assertAlmostEqual(result.score, 1.0)
+        
+    # todo: test JAL, test custom label, test JAL with custom label
 
 
 if __name__ == "__main__":
