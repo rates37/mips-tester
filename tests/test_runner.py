@@ -62,7 +62,7 @@ class TestRunnerIntegration(unittest.TestCase):
         self.invalid_asm_harness.write_text(invalid_asm_harness)
 
         self.valid_asm_runtime_exception = (
-            self.temp_path / "valid_runtime_execution.asm"
+            self.temp_path / "valid_runtime_exception.asm"
         )
         valid_asm_runtime_exception_content = """
         .text
@@ -150,11 +150,11 @@ class TestRunnerIntegration(unittest.TestCase):
             msg=f"Run of invalid program with valid harness unexpectedly succeeded: {result.messages}",
         )
 
-    def test_run_runtime_execution(self):
+    def test_run_runtime_exception(self):
         result = test_run(str(self.valid_asm_runtime_exception))
         self.assertFalse(
             result.success,
-            msg=f"Run of program with runtime execution unexpectedly succeeded: {result.messages}",
+            msg=f"Run of program with runtime exception unexpectedly succeeded: {result.messages}",
         )
 
     def test_final_state_register_success(self):
@@ -177,8 +177,18 @@ class TestRunnerIntegration(unittest.TestCase):
         )
         self.assertLess(result.score, 1.0)
 
+    def test_final_state_memory_failure_legacy(self):
+        expected_state = MipsState.from_dict({"registers":{}, "memory":{"0x10010000": "0x10"}})
+        result = test_final_state(
+            expected_state, str(self.valid_asm_harness), str(self.valid_asm)
+        )
+        self.assertTrue(
+            result.success, msg=f"Final state check failed: {result.messages}."
+        )
+        self.assertLess(result.score, 1.0)
+
     def test_final_state_memory_failure(self):
-        expected_state = MipsState(registers={}, memory={"0x10010000": "0x10"})
+        expected_state = MipsState(registers={}, memory={"0x10010000": {"value": "0xFF", "size": "word"}})
         result = test_final_state(
             expected_state, str(self.valid_asm_harness), str(self.valid_asm)
         )
@@ -233,8 +243,8 @@ class TestRunnerIntegration(unittest.TestCase):
         )
         self.assertAlmostEqual(result.score, 1.0)
     
-    def test_final_state_memory_text_region_success(self):
-        expected_state = MipsState(registers={}, memory={"0x400000": "0x0"})
+    def test_final_state_memory_text_region_success_legacy(self):
+        expected_state = MipsState.from_dict({"registers":{}, "memory":{"0x400000": "0x0"}})
         result = test_final_state(
             expected_state, str(self.valid_asm_harness), str(self.valid_asm)
         )
@@ -242,7 +252,18 @@ class TestRunnerIntegration(unittest.TestCase):
             result.success, msg=f"Final state check failed: {result.messages}."
         )
         self.assertLess(result.score, 1.0)
-        
+    
+    def test_final_state_memory_text_region_success(self):
+        expected_state = MipsState(registers={}, memory={"0x400000": {"value": "0x0"}})
+        result = test_final_state(
+            expected_state, str(self.valid_asm_harness), str(self.valid_asm)
+        )
+        self.assertTrue(
+            result.success, msg=f"Final state check failed: {result.messages}."
+        )
+        self.assertLess(result.score, 1.0)
+    
+    # todo: test byte, halfword, words explicitly
 
 
 if __name__ == "__main__":
