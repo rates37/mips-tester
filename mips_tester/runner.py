@@ -105,10 +105,10 @@ def extract_memory_value(word_value: int, addr: int, size: MemorySize) -> int:
     byte_offset = addr % 4
 
     if size == MemorySize.BYTE:
-        shamt = (3 - byte_offset) * 8
+        shamt = byte_offset * 8
         return (word_value >> shamt) & 0xFF
     elif size == MemorySize.HALFWORD:
-        shamt = (2 - byte_offset) * 8
+        shamt = (byte_offset & ~1) * 8
         return (word_value >> shamt) & 0xFFFF
     else:  # WORD (default)
         return word_value
