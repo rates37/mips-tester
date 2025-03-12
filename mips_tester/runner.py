@@ -5,7 +5,7 @@ Functions to assemble, run and check final state of MIPS programs
 import subprocess
 from pathlib import Path
 
-from .models import MipsState, TestResult
+from .models import MipsState, TestResult, MemorySize
 from .core import config
 from .harness import create_harness
 
@@ -92,6 +92,29 @@ def test_run(
         )
 
 
+def extract_memory_value(word_value: int, addr: int, size: MemorySize) -> int:
+    """Extract the correct portion of a word based on address and size
+
+    Args:
+        word_value (int): The full word value (4 bytes)
+        addr (int): The memory address to extract from
+        size (MemorySize): The size of the memory address
+
+    Returns:
+        int: The extracted value based on size and alignment
+    """
+    byte_offset = addr % 4
+
+    if size == MemorySize.BYTE:
+        shamt = (3 - byte_offset) * 8
+        return (word_value >> shamt) & 0xFF
+    elif size == MemorySize.HALFWORD:
+        shamt = (2 - byte_offset) * 8
+        return (word_value >> shamt) & 0xFFFF
+    else:  # WORD (default)
+        return word_value
+
+
 def test_final_state(
     expected_state: MipsState | dict,
     harness_name: Path | str,
@@ -102,7 +125,7 @@ def test_final_state(
 
     # convert expected_state to MipsState if not already:
     if isinstance(expected_state, dict):
-        expected_state = MipsState(**expected_state)
+        expected_state = MipsState.from_dict(expected_state)
 
     # revert to defaults if max_steps not specified:
     if max_steps is None:
@@ -129,8 +152,16 @@ def test_final_state(
     # prepare command to check both memory and registers
     check_targets = []
 
-    # add memory locations:
-    for addr in expected_state.memory:
+    # Add word-aligned memory addresses for MARS to check
+    word_aligned_addresses = set()
+    for addr_str in expected_state.memory:
+        # Get the word-aligned address containing our target address
+        addr_int = int(addr_str, 0)
+        word_addr = addr_int & ~0x3  # Mask off bottom 2 bits to get word alignment
+        word_aligned_addresses.add(f"0x{word_addr:08x}")
+
+    # Add the word-aligned addresses to check targets
+    for addr in word_aligned_addresses:
         check_targets.append(f"{addr}-{addr}")
 
     # add register names:
@@ -160,27 +191,51 @@ def test_final_state(
     available_marks = 0
     messages = []
 
+    # Store actual memory values for later processing
+    actual_memory = {}
+    for line in output_lines:
+        if "Mem[0x" in line:
+            parts = line.split()
+            addr = parts[0].replace("Mem[", "").replace("]", "")
+            value = parts[-1]
+            actual_memory[addr] = int(value, 16)
+
     # check memory locations:
     for addr in expected_state.memory:
         available_marks += 1
 
-        # find the line in output corresponding to this memory address:
-        target_mem_line = next(
-            (line for line in output_lines if f"Mem[{addr}]" in line), None
-        )
+        entry = expected_state.memory[addr]
+        addr_int = int(addr, 0)
 
-        if not target_mem_line:
-            raise ValueError(f"Mem[{addr}] not found in output, critical error occurred")
+        # find the word-aligned address containing the target address:
+        word_addr_int = addr_int & ~0x3  # set bottom 2 bits to 0 to make word aligned
+        word_addr_hex = f"0x{word_addr_int:08x}"
 
-        actual_value = target_mem_line.split()[-1]
-        expected_value = expected_state.memory[addr]
+        if word_addr_hex not in actual_memory:
+            messages.append(f"Memory location {word_addr_hex} not found in output")
+            if verbose:
+                print(f"Memory location {word_addr_hex} not found in output")
+            continue
 
-        if int(actual_value, base=16) == int(expected_value, base=0):
+        # get full word value from memory:
+        word_value = actual_memory[word_addr_hex]
+
+        # get correct portion of value based on memory entry size:
+        actual_value = extract_memory_value(word_value, addr_int, entry.size)
+        expected_value = int(entry.value, 0)
+
+        # mask non-words to ensure proper comparison (not strictly necessary):
+        if entry.size == MemorySize.BYTE:
+            expected_value &= 0xFF
+        elif entry.size == MemorySize.HALFWORD:
+            expected_value &= 0xFFFF
+
+        if actual_value == expected_value:
             total_marks += 1
             if verbose:
-                print(f"Correct value in {addr}")
+                print(f"Correct {entry.size.value} value at {addr}")
         else:
-            message = f"Incorrect value in {addr}! Expected: {expected_value} Actual: {actual_value}"
+            message = f"Incorrect {entry.size.value} value at {addr}! Expected: {hex(expected_value)} Actual: {hex(actual_value)}"
             messages.append(message)
             if verbose:
                 print(message)
@@ -197,7 +252,7 @@ def test_final_state(
 
         if not target_reg_line:
             raise ValueError(f"${reg} not found in output, critical error occurred")
-        
+
         actual_value = target_reg_line.split()[-1]
 
         if int(actual_value, base=16) == int(expected_value, base=0):
