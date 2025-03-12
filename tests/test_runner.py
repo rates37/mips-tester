@@ -10,6 +10,7 @@ from mips_tester import (
     test_final_state,
     MemorySize,
     create_harness,
+    JumpType,
 )
 
 
@@ -132,6 +133,32 @@ class TestRunnerIntegration(unittest.TestCase):
         lw $s0, 0($t1)
         """
         self.w_array_prog.write_text(w_array_content)
+
+        self.return_value_asm = self.temp_path / "return_values.asm"
+        return_value_content = """
+        .text
+        .globl main
+        main:
+        # Function that returns values in $v0 and $v1
+        li $v0, 42
+        li $v1, 84
+        
+        jr $ra
+        """
+        self.return_value_asm.write_text(return_value_content)
+        
+        self.custom_label_asm = self.temp_path / "custom_label.asm"
+        custom_label_content = """
+        .text
+        .globl custom_entry
+        custom_entry:
+        li $t0, 0xABCDEF
+        li $t1, 0x123456
+        
+        li $v0, 10
+        syscall
+        """
+        self.custom_label_asm.write_text(custom_label_content)
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -435,9 +462,68 @@ class TestRunnerIntegration(unittest.TestCase):
 
         self.assertTrue(result.success)
         self.assertAlmostEqual(result.score, 1.0)
-        
-    # todo: test JAL, test custom label, test JAL with custom label
 
+    def test_harness_jump_types_jal(self):
+        """Test harness with jump and link (jal)."""
+        initial_state = MipsState(registers={"a0": "0x10", "a1": "0x20"}, memory={})
+
+        harness_path = create_harness(
+            initial_state,
+            output_harness_name=self.temp_path / "jal_harness.asm",
+            jump_type=JumpType.JUMP_AND_LINK,
+        )
+
+        expected_state = MipsState(
+            registers={
+                "v0": "42",
+                "v1": "84",
+            },
+        )
+
+        result = test_final_state(
+            expected_state,
+            harness_path,
+            str(self.return_value_asm),
+        )
+
+        self.assertTrue(result.success)
+        self.assertAlmostEqual(result.score, 1.0)
+
+    def test_custom_label(self):
+        """Test harness with custom entry label."""
+        
+        
+        initial_state = MipsState(
+            registers={"a0": "0x10", "a1": "0x20"},
+            memory={}
+        )
+        
+        harness_path = create_harness(
+            initial_state,
+            label="custom_entry",
+            output_harness_name=self.temp_path / "custom_label_harness.asm",
+        )
+
+        expected_state = MipsState(
+            registers={
+                "a0": "0x10",
+                "a1": "0x20",
+                "t0": "0xABCDEF",
+                "t1": "0x123456",
+                "v0": "10"
+            },
+        )
+        
+        result = test_final_state(
+            expected_state, 
+            str(harness_path), 
+            str(self.custom_label_asm)
+        )
+        
+        self.assertTrue(result.success)
+        self.assertAlmostEqual(result.score, 1.0)
+
+    # todo: test JAL with custom label
 
 if __name__ == "__main__":
     unittest.main()
