@@ -9,7 +9,7 @@ from mips_tester import (
     test_run,
     test_final_state,
     MemorySize,
-    create_harness
+    create_harness,
 )
 
 
@@ -73,7 +73,7 @@ class TestRunnerIntegration(unittest.TestCase):
         sw $t1, ($t0)
         """
         self.valid_asm_runtime_exception.write_text(valid_asm_runtime_exception_content)
-        
+
         self.memory_test_asm = self.temp_path / "memory_test.asm"
         memory_test_content = """
         .text
@@ -98,6 +98,40 @@ class TestRunnerIntegration(unittest.TestCase):
         lw $t4, 0($t1)
         """
         self.memory_test_asm.write_text(memory_test_content)
+
+        self.byte_array_prog = self.temp_path / "byte_array_test.asm"
+        byte_array_content = """
+        .text
+        .globl main
+        main:
+        la $t1, 0x10010010
+        lb $s0, 0($t1)
+        lb $s1, 1($t1)
+        lb $s2, 2($t1)
+        lb $s3, 3($t1)
+        """
+        self.byte_array_prog.write_text(byte_array_content)
+
+        self.hw_array_prog = self.temp_path / "hw_array_test.asm"
+        hw_array_content = """
+        .text
+        .globl main
+        main:
+        la $t1, 0x10010010
+        lh $s0, 0($t1)
+        lh $s1, 2($t1)
+        """
+        self.hw_array_prog.write_text(hw_array_content)
+
+        self.w_array_prog = self.temp_path / "w_array_test.asm"
+        w_array_content = """
+        .text
+        .globl main
+        main:
+        la $t1, 0x10010010
+        lw $s0, 0($t1)
+        """
+        self.w_array_prog.write_text(w_array_content)
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -297,14 +331,13 @@ class TestRunnerIntegration(unittest.TestCase):
 
     def test_final_state_byte_memory(self):
         """Test checking final state with byte memory accesses."""
-        # Create a simple harness for testing bytes
+
         initial_state = MipsState()
         harness_path = create_harness(
             initial_state,
             output_harness_name=self.temp_path / "byte_test_harness.asm",
         )
-        
-        # Expected state after running the program
+
         expected_state = MipsState(
             registers={"t2": "69", "t3": "420", "t4": "69420"},
             memory={
@@ -313,14 +346,93 @@ class TestRunnerIntegration(unittest.TestCase):
                 "0x10010004": {"value": "69420", "size": MemorySize.WORD}
             }
         )
-        
+
         result = test_final_state(
-            expected_state, 
-            str(harness_path), 
-            str(self.memory_test_asm),
-            verbose=True
+            expected_state,
+            str(harness_path),
+            str(self.memory_test_asm)
         )
-        
+
+        self.assertTrue(result.success)
+        self.assertAlmostEqual(result.score, 1.0)
+
+    def test_memory_byte_array_extraction(self):
+        """Test extracting individual bytes from a memory array."""
+
+        initial_state = MipsState(
+            memory={"0x10010010": {"value": "0x12345678", "size": MemorySize.WORD}}
+        )
+        harness_path = create_harness(
+            initial_state,
+            output_harness_name=self.temp_path / "byte_array_harness.asm",
+        )
+
+        expected_state = MipsState(
+            registers={
+                "s0": "0x78",
+                "s1": "0x56",
+                "s2": "0x34",
+                "s3": "0x12",
+            }
+        )
+
+        result = test_final_state(
+            expected_state, str(harness_path), str(self.byte_array_prog)
+        )
+
+        self.assertTrue(result.success)
+        self.assertAlmostEqual(result.score, 1.0)
+
+    def test_memory_half_word_array_extraction(self):
+        """Test extracting half words from a memory array."""
+
+        initial_state = MipsState(
+            memory={"0x10010010": {"value": "0x12345678", "size": MemorySize.WORD}}
+        )
+        harness_path = create_harness(
+            initial_state,
+            output_harness_name=self.temp_path / "hw_array_harness.asm",
+        )
+
+        expected_state = MipsState(
+            registers={
+                "s0": "0x5678",
+                "s1": "0x1234",
+            }
+        )
+
+        result = test_final_state(
+            expected_state,
+            str(harness_path),
+            str(self.hw_array_prog),
+        )
+
+        self.assertTrue(result.success)
+        self.assertAlmostEqual(result.score, 1.0)
+
+    def test_memory_word_extraction(self):
+        """Test extracting word from a memory array."""
+
+        initial_state = MipsState(
+            memory={"0x10010010": {"value": "0x12345678", "size": MemorySize.WORD}}
+        )
+        harness_path = create_harness(
+            initial_state,
+            output_harness_name=self.temp_path / "w_array_harness.asm",
+        )
+
+        expected_state = MipsState(
+            registers={
+                "s0": "0x12345678",
+            }
+        )
+
+        result = test_final_state(
+            expected_state,
+            str(harness_path),
+            str(self.w_array_prog),
+        )
+
         self.assertTrue(result.success)
         self.assertAlmostEqual(result.score, 1.0)
 
