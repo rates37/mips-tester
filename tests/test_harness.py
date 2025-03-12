@@ -28,7 +28,6 @@ class TestHarness(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    #! legacy tests: needs review
     def test_create_harness_basic(self):
         initial_state = MipsState.from_dict(
             {
