@@ -3,7 +3,7 @@ Defined data models for MIPS testing library
 """
 
 from enum import Enum
-from pydantic import BaseModel, Field, validator, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 class JumpType(str, Enum):
@@ -11,6 +11,33 @@ class JumpType(str, Enum):
 
     JUMP = "j"
     JUMP_AND_LINK = "jal"
+
+
+class MemorySize(str, Enum):
+    """Size of memory to access."""
+
+    BYTE = "byte"  # 1 byte
+    HALFWORD = "half"  # 2 bytes
+    WORD = "word"  # 4 bytes
+
+
+class MemoryEntry(BaseModel):
+    """Represents a single memory entry with size and value."""
+
+    value: str
+    size: MemorySize = MemorySize.WORD
+
+    @field_validator("value")
+    def validate_value(cls, v):
+        val_str = str(v)
+        # ensure decimal or hex:
+        try:
+            int(val_str, 0)
+        except ValueError:
+            raise ValueError(f"Invalid memory value: {val_str}! Must be decimal or hex")
+        return val_str
+
+    model_config = ConfigDict(validate_assignment=True)
 
 
 class RegisterState(BaseModel):
@@ -48,39 +75,67 @@ class MipsState(BaseModel):
     """Represents the complete state of a MIPS program (registers+memory)."""
 
     registers: RegisterState = Field(default_factory=RegisterState)
-    memory: dict[str, str] = Field(
+    memory: dict[str, MemoryEntry] = Field(
         default_factory=dict,
-        description="Memory address to value mappings (decimal or Hex)",
+        description="Memory address to value mappings with size specification",
     )
 
     @field_validator("memory")
-    def validate_memory_addresses(v, cls):
+    def validate_memory_addresses(cls, v):
         memory = dict()
-        for addr, val in v.items():
+        for addr, entry in v.items():
+            # ensure entry is MemoryEntry:
+            if isinstance(entry, dict):
+                memory_entry = MemoryEntry(**entry)
+
+            elif isinstance(entry, str) or isinstance(entry, int):
+                # default to WORD size entry
+                memory_entry = MemoryEntry(value=str(entry))
+
+            elif isinstance(entry, MemoryEntry):
+                memory_entry = entry
+            else:
+                raise ValueError(f"Invalid memory entry type for {addr}: {type(entry)}")
             # ensure address is string:
             addr_str = str(addr)
 
             # ensure address is number (decimal or hex):
             try:
                 addr_int = int(addr_str, 0)
+
+                # ensure memory address is aligned with word or half word boundaries:
+                if memory_entry.size == MemorySize.HALFWORD and addr_int % 2 != 0:
+                    raise ValueError(
+                        f"Halfword address {addr_str} must be 2-byte aligned"
+                    )
+                elif memory_entry.size == MemorySize.WORD and addr_int % 4 != 0:
+                    raise ValueError(f"Word address {addr_str} must be 4-byte aligned")
+
                 addr_padded = f"0x{addr_int:08x}"
             except ValueError:
                 raise ValueError(
                     f"Invalid memory address: {addr_str}! Must be decimal or hex"
                 )
 
-            # ensure val is a string:
-            val_str = str(val)
-
-            # ensure value is number (decimal or hex):
-            try:
-                int(val_str, 0)
-            except ValueError:
-                raise ValueError(
-                    f"Invalid memory value: {val_str}! Must be decimal or hex"
-                )
-            memory[addr_padded] = val_str
+            memory[addr_padded] = memory_entry
         return memory
+
+    # backward compatibility for easy dict initialisation:
+    @classmethod
+    def from_dict(cls, data: dict):
+        """Create MipsState from dictionary with backward compatibility."""
+        if "memory" in data and isinstance(data["memory"], dict):
+            memory_dict = dict()
+            for addr, value in data["memory"].items():
+                if isinstance(value, dict) and "value" in value:
+                    # already in new format:
+                    memory_dict[addr] = value
+                else:
+                    # uses old format, so convert to new format
+                    # with default as WORD size
+                    memory_dict[addr] = {"value": str(value), "size": MemorySize.WORD}
+            data["memory"] = memory_dict
+        return cls(**data)
 
     model_config = ConfigDict(validate_assignment=True)
 

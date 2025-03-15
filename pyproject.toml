@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = { file = "LICENSE" }
 dependencies = ["pydantic"]
-authors = [{ name = "Satya Jhaveri", email = "satyajhaveri@protonmail.ch" }]
+authors = [{ name = "Satya Jhaveri" }]
 
 [tool.setuptools.packages.find]
 where = ["mips_tester"]
