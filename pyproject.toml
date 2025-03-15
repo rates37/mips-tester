@@ -2,6 +2,9 @@
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+packages = ["mips_tester"]
+
 [project]
 name = "mips_tester"
 version = "0.1.0"
@@ -12,5 +15,4 @@ license = { file = "LICENSE" }
 dependencies = ["pydantic"]
 authors = [{ name = "Satya Jhaveri" }]
 
-[tool.setuptools.packages.find]
-where = ["mips_tester"]
+
