@@ -36,4 +36,4 @@ print(f"Test {'passed' if result.score == 1 else 'failed'}")
 if result.messages:
     print("Issues found:")
     for msg in result.messages:
-        print(f"\t`- {msg}")
+        print(f"\t- {msg}")
