@@ -1,12 +1,12 @@
 import json
-from .models import MipsState, JumpType, MemoryEntry
+from .models import MipsState, JumpType
 from .core import configure
 from .harness import create_harness
 from .runner import test_final_state
 
 
-def load_and_run_tests(json_file):
-    """Loads test cases from a JSON file and executes them."""
+def load_and_run_tests(json_file: str) -> None:
+    """Loads test cases from a JSON file and executes them, printing results to console."""
     with open(json_file, 'r') as f:
         test_data = json.load(f)
 
@@ -43,4 +43,3 @@ def load_and_run_tests(json_file):
         if result.messages:
             for msg in result.messages:
                 print(f"\t- {msg}")
-        print("-" * 20)
