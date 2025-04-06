@@ -1,0 +1,44 @@
+{
+  "tests": [
+    {
+      "name": "factorial_10",
+      "description": "Calculate the factorial of 10",
+      "mars_path": "./mars.jar",
+      "initial_state": {
+        "registers": {
+          "a0": "10"
+        }
+      },
+      "harness": {
+        "label": "factorial",
+        "jump_type": "JUMP_AND_LINK"
+      },
+      "expected_state": {
+        "registers": {
+          "v0": "3628800"
+        }
+      },
+      "program_file": "examples/factorial/factorial.asm"
+    },
+    {
+      "name": "factorial_5",
+      "description": "Calculate the factorial of 5",
+      "mars_path": "./mars.jar",
+      "initial_state": {
+        "registers": {
+          "a0": "5"
+        }
+      },
+      "harness": {
+        "label": "factorial",
+        "jump_type": "JUMP_AND_LINK"
+      },
+      "expected_state": {
+        "registers": {
+          "v0": "120"
+        }
+      },
+      "program_file": "examples/factorial/factorial.asm"
+    }
+  ]
+}
