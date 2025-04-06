@@ -184,3 +184,5 @@ cython_debug/
 /.vscode
 
 !examples/**
+
+examples/private/**
