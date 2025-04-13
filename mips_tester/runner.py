@@ -63,7 +63,7 @@ def test_assemble(
                 f"Program {' '.join([harness_name, filename] if harness_name else [filename])} did not assemble correctly!"
             )
         return TestResult(
-            success=False, score=0.0, messages=["Program did not compile correctly"]
+            success=False, score=0.0, messages=["Program did not assemble correctly"]
         )
 
 
