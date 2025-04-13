@@ -8,6 +8,15 @@ from pathlib import Path
 from .models import MipsState, TestResult, MemorySize
 from .core import config
 
+def _check_exists(filename: Path | str, harness_name: Path | str = None) -> None | TestResult:
+    # checks whether the file name and harness exist
+    filename = Path(filename)
+    if not Path.exists(filename):
+        return TestResult(success=False, score=0.0, messages=[f"File {filename} was not found."])
+    harness_name = Path(harness_name)
+    if harness_name and not Path.exists(harness_name):
+        return TestResult(success=False, score=0.0, messages=[f"Harness {harness_name} was not found."])
+    return None
 
 def test_assemble(
     filename: Path | str, harness_name: Path | str | None = None, verbose: bool = False
@@ -22,6 +31,11 @@ def test_assemble(
     Returns:
         TestResult: Contains success status proportion of passed tests, and corresponding messages.
     """
+    # check file name and path exists:
+    file_exists_result = _check_exists(filename, harness_name)
+    if file_exists_result is not None:
+        return file_exists_result
+    
     command = ["java", "-jar", str(config.mars_path)]
 
     if harness_name is not None:
@@ -57,6 +71,11 @@ def test_run(
     verbose: bool = False,
     max_steps: int | None = None,
 ) -> TestResult:
+    # check file name and path exists:
+    file_exists_result = _check_exists(filename, harness_name)
+    if file_exists_result is not None:
+        return file_exists_result
+    
 
     # revert to defaults if max_steps not specified:
     if max_steps is None:
@@ -121,6 +140,11 @@ def test_final_state(
     verbose: bool = False,
     max_steps: int | None = None,
 ) -> TestResult:
+    # check file name and path exists:
+    file_exists_result = _check_exists(filename, harness_name)
+    if file_exists_result is not None:
+        return file_exists_result
+    
 
     # convert expected_state to MipsState if not already:
     if isinstance(expected_state, dict):
