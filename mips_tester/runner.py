@@ -13,9 +13,11 @@ def _check_exists(filename: Path | str, harness_name: Path | str = None) -> None
     filename = Path(filename)
     if not Path.exists(filename):
         return TestResult(success=False, score=0.0, messages=[f"File {filename} was not found."])
-    harness_name = Path(harness_name)
-    if harness_name and not Path.exists(harness_name):
-        return TestResult(success=False, score=0.0, messages=[f"Harness {harness_name} was not found."])
+    
+    if harness_name:
+        harness_name = Path(harness_name)
+        if not Path.exists(harness_name):
+            return TestResult(success=False, score=0.0, messages=[f"Harness {harness_name} was not found."])
     return None
 
 def test_assemble(
