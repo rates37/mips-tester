@@ -67,6 +67,9 @@ class RegisterState(BaseModel):
     s5: str | None = None
     s6: str | None = None
     s7: str | None = None
+    sp: str | None = None
+    fp: str | None = None
+    ra: str | None = None
 
     model_config = ConfigDict(validate_assignment=True)
 
