@@ -1,6 +1,6 @@
 import json
 from .models import MipsState, JumpType
-from .core import configure
+from .core import configure, config
 from .harness import create_harness
 from .runner import test_final_state
 
@@ -30,12 +30,17 @@ def load_and_run_tests(json_file: str) -> None:
         # Define expected final state
         expected_state_data = test_case['expected_state']
         expected_state = MipsState.from_dict(expected_state_data)
+        try:
+            max_steps = test_case['max_steps']
+        except:
+            max_steps = config.default_max_steps
 
         # Test the program
         result = test_final_state(
             expected_state=expected_state,
             harness_name=harness_path,
-            filename=test_case['program_file']
+            filename=test_case['program_file'],
+            max_steps=max_steps
         )
 
         # Check the result
